@@ -5,11 +5,12 @@ from common.format import *
 from common.processing import *
 import csv
 import numpy
-import pandas
 import keras
 from keras import optimizers
 from keras.models import Sequential
 from keras.layers import Dense, Activation
+
+POINT_NAME='水戸'
 
 ##################################################
 # CSVファイル(csv_path)から気象データを読み込む
@@ -20,7 +21,10 @@ from keras.layers import Dense, Activation
 ##################################################
 def read_weather_csv(csv_path):
 	csv_data = []
-	with open(csv_path, 'r', encoding='shift_jis') as f:
+        # Python2でも動くように変更。
+        # CSVのエンコードは事前に'utf-8'に変更した。
+	#  (変更前)with open(csv_path, 'r', encoding='shift_jis') as f:
+	with open(csv_path, 'r') as f:
 		reader = csv.reader(f)
 		for row in reader:
 			csv_data.append(row)
@@ -38,23 +42,22 @@ def read_weather_csv(csv_path):
 ##################################################
 def extract_learning_data(csv_data):
 	
-	# 入力データ取得：気温,降水量,風速,風向,相対湿度,日照時間,現地気圧
-	temperature = get_temperature(csv_data)
-	rainfall = get_rainfall(csv_data)
-	wind_speed, wind_dir = get_wind_speed(csv_data)
-	humidity = get_humidity(csv_data)
-	daylight = get_daylight(csv_data)
-	atom_pressure = get_atom_pressure(csv_data)
+	# 入力データ取得：降水量,相対湿度,海面気圧
+	rainfall = get_rainfall(csv_data, POINT_NAME)
+	humidity = get_humidity(csv_data, POINT_NAME)
+	sea_level_pressure = get_sea_level_pressure(csv_data, POINT_NAME)
+	#temperature = get_temperature(csv_data, POINT_NAME)
+	#wind_speed = get_wind_speed(csv_data, POINT_NAME)
+	#wind_dir = get_wind_direction(csv_data, POINT_NAME)
+	#daylight = get_daylight(csv_data, POINT_NAME)
+	#atom_pressure = get_atom_pressure(csv_data, POINT_NAME)
 	
 	# 入力データ結合
 	input_data = numpy.stack(
-		[rainfall, daylight], 1)
-		#[rainfall, humidity, daylight, atom_pressure], 1)
-		#[temperature, rainfall, wind_speed, wind_dir, 
-		# humidity, daylight, atom_pressure], 1)
+		[rainfall, humidity, sea_level_pressure], 1)
 	
 	# 出力データ取得：天気
-	label_data = get_weather(csv_data)
+	label_data = get_weather(csv_data, POINT_NAME)
 	
 	# 入力データ・出力データにNaNが含まれている行を削る
 	isnan_row_input = numpy.isnan(input_data).any(axis=1)
@@ -121,10 +124,10 @@ if __name__ == '__main__':
 	
 	# 学習実行
 	epoch = 0
-	for i in range(10):
+	for i in range(100):
 		model.fit(
 			train_input, train_label, 
-			epochs=100, batch_size=32, shuffle=True, verbose=0)
+			epochs=100, batch_size=16, shuffle=False, verbose=0)
 		score = model.evaluate(test_input, test_label, verbose=0)
 		
 		epoch = epoch + 100

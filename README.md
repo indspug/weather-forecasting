@@ -27,6 +27,43 @@ python simple_dnn.py [train_csv_path] [test_csv_path]
 
 ## Install
 
+### Python 2.7 (on Amazon Linux)
+
+python, pip, virtualenvをインストールする。
+```bash
+sudo yum install python27
+sudo yum install python27-pip
+pip install virtualenv
+```
+
+virtualenvで仮想環境を作成する。
+```bash
+virtualenv --no-site-packages weather_forecasting
+```
+
+仮想環境を有効にする。
+```bash
+cd weather_forecasting
+source bin/activate
+```
+
+仮想環境にnumpyをインストールする。
+```bash
+pip install numpy
+pip install tensorflow
+pip install keras
+```
+
+GitHubからリポジトリをクローンする。
+```bash
+git clone 'https://github.com/indspug/weather-forecasting'
+```
+
+作業が終わったら仮想環境を無効にする。
+```bash
+deactivate
+```
+### Python3 (on Amazonn Linux2)
 Amazon Linux2でのインストール手順です。
 
 python3, pip3, virtualenvをインストールする。
