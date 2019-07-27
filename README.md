@@ -11,7 +11,7 @@ Pythonで天気予測
 
 ## Requirement
 
-- python3
+- python
 - numpy
 - tensorflow
 - keras

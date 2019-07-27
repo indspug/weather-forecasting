@@ -429,14 +429,35 @@ def get_sea_level_pressure(input_data, point_name):
 	
 	return sea_level_pressure
 	
+#################################################
+# 入力データ(input_data)から年月日時を抽出して返す
+##################################################
+def get_datetime(input_data):
+	
+	# 年月日時の値が格納されている列のインデックスを取得する
+	col = get_col_index(input_data, '', '年月日時', '')
+	if col < 0 :
+		raise Exception('No data')
+	
+	# 年月日時は品質情報無し
+	
+	# 最初の5,6行はヘッダーなので読み飛ばす
+	data_start_index = get_header_row_num(input_data) + ROW_HEADER_START - 1 
+	data_num = len(input_data) - data_start_index
+	
+	datetime = []
+	for i in range(data_num):
+		row = i + data_start_index
+		datetime.append( input_data[row][col])
+	
+	return datetime
+	
 ##################################################
 # 入力データ(input_data)から天気を抽出し整形して返す
 # (晴れ、曇り、雨に分類)
 ##################################################
 def get_weather(input_data, point_name):
 	
-        print point_name
-        
 	# 天気の値が格納されている列のインデックスを取得する
 	value_index = get_col_index(input_data, point_name, '天気', '')
 	if value_index < 0 :

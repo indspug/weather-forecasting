@@ -52,25 +52,26 @@ def extract_learning_data(csv_data):
 	#daylight = get_daylight(csv_data, POINT_NAME)
 	#atom_pressure = get_atom_pressure(csv_data, POINT_NAME)
 	
+	# 時(hh)取得
+	datetime = get_datetime(csv_data)
+	datetime = extract_element_from_datetime(datetime)
+	hour = datetime[:,3]
+	hour = hour - 12.0  # 正午が0になるように調整
+	
 	# 入力データ結合
 	input_data = numpy.stack(
-		[rainfall, humidity, sea_level_pressure], 1)
+		[hour, rainfall, humidity, sea_level_pressure], 1)
 	
 	# 出力データ取得：天気
 	label_data = get_weather(csv_data, POINT_NAME)
 	
 	# 入力データ・出力データにNaNが含まれている行を削る
-	isnan_row_input = numpy.isnan(input_data).any(axis=1)
-	isnan_row_label = numpy.isnan(label_data).any(axis=1)
-	isnan_row = numpy.logical_or(isnan_row_input, isnan_row_label)
-	input_data = input_data[~isnan_row,]
-	label_data = label_data[~isnan_row,]
+	input_data, label_data = remove_nan_data(input_data, label_data)
 	
 	# 不整合データを削除する
-	is_inconsistency = check_rainfall_inconsistency(input_data[:,0], label_data)
-	#print(is_inconsistency)
-	input_data = input_data[~is_inconsistency,]
-	label_data = label_data[~is_inconsistency,]
+	is_inconsistency_row = check_rainfall_inconsistency(input_data[:,1], label_data)
+	input_data = input_data[~is_inconsistency_row,]
+	label_data = label_data[~is_inconsistency_row,]
 	
 	# 入力データをMAX-MIN標準化する
 	input_data = max_min_normalize(input_data, axis=0)
