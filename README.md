@@ -19,11 +19,27 @@ Pythonで天気予測
 ## Usage
 
 ```bash
-python simple_dnn.py [train_csv_path] [test_csv_path]
+python simple_dnn.py [train_csv_dirpath] [test_csv_dirpath]
 ```
 
-学習・テスト用のCSVファイルは気象庁からダウンロードしてください。
+train_csv_dirpath: 学習用CSVファイル格納ディレクトリ
+test_csv_dirpath : テスト用CSVファイル格納ディレクトリ
+
+### CSVファイルの用意
+
+学習・テスト用のCSVファイルを気象庁のページからダウンロードします。
 [気象庁|過去の気象データ・ダウンロード](https://www.data.jma.go.jp/risk/obsdl/index.php)
+
+### ディレクトリ構成の例
+
+```
+train
+├── mito_20180101-20180331data.csv
+├── mito_20180401-20180630data.csv
+└── mito_20180701-20180930data.csv
+test
+└── mito_20181001-20181231data.csv
+```
 
 ## Install
 
