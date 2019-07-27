@@ -22,23 +22,30 @@ Pythonで天気予測
 python simple_dnn.py [train_csv_dirpath] [test_csv_dirpath]
 ```
 
-train_csv_dirpath: 学習用CSVファイル格納ディレクトリ
-test_csv_dirpath : テスト用CSVファイル格納ディレクトリ
+- train_csv_dirpath: 学習用CSVファイル格納ディレクトリ
+- test_csv_dirpath : テスト用CSVファイル格納ディレクトリ
 
 ### CSVファイルの用意
 
-学習・テスト用のCSVファイルを気象庁のページからダウンロードします。
+学習・テスト用のCSVファイルを気象庁のページからダウンロードする。
 [気象庁|過去の気象データ・ダウンロード](https://www.data.jma.go.jp/risk/obsdl/index.php)
 
 ### ディレクトリ構成の例
 
 ```
+simple_dnn.py
 train
 ├── mito_20180101-20180331data.csv
 ├── mito_20180401-20180630data.csv
 └── mito_20180701-20180930data.csv
 test
 └── mito_20181001-20181231data.csv
+```
+
+### 実行例
+
+```bash
+python simple_dnn.py train test
 ```
 
 ## Install
@@ -80,7 +87,6 @@ git clone 'https://github.com/indspug/weather-forecasting'
 deactivate
 ```
 ### Python3 (on Amazonn Linux2)
-Amazon Linux2でのインストール手順です。
 
 python3, pip3, virtualenvをインストールする。
 ```bash
