@@ -21,8 +21,8 @@ POINT_NAME='水戸'
 ##################################################
 def read_weather_csv(csv_path):
 	csv_data = []
-        # Python2でも動くように変更。
-        # CSVのエンコードは事前に'utf-8'に変更した。
+	# Python2でも動くように変更。
+	# CSVのエンコードは事前に'utf-8'に変更した。
 	#  (変更前)with open(csv_path, 'r', encoding='shift_jis') as f:
 	with open(csv_path, 'r') as f:
 		reader = csv.reader(f)
@@ -66,6 +66,12 @@ def extract_learning_data(csv_data):
 	input_data = input_data[~isnan_row,]
 	label_data = label_data[~isnan_row,]
 	
+	# 不整合データを削除する
+	is_inconsistency = check_rainfall_inconsistency(input_data[:,0], label_data)
+	#print(is_inconsistency)
+	input_data = input_data[~is_inconsistency,]
+	label_data = label_data[~is_inconsistency,]
+	
 	# 入力データをMAX-MIN標準化する
 	input_data = max_min_normalize(input_data, axis=0)
 	
@@ -99,10 +105,8 @@ if __name__ == '__main__':
 	train_input, train_label = extract_learning_data(train_csv_data)
 	test_input, test_label = extract_learning_data(test_csv_data)
 	
-	#print(train_input.shape)
-	#print(test_input.shape)
-	
 	# モデルの作成
+	#  3 x 32 x 32 x 3 
 	input_data_dim = train_input.shape[1]
 	label_num = train_label.shape[1]
 	model = Sequential()
@@ -125,14 +129,18 @@ if __name__ == '__main__':
 	# 学習実行
 	epoch = 0
 	for i in range(100):
+                # 学習
 		model.fit(
 			train_input, train_label, 
 			epochs=100, batch_size=16, shuffle=False, verbose=0)
+		
+		# 評価
+		#  loss: 損失値(正解データとの誤差。小さい方が良い。)
+		#  acc: 評価値(正解率。高い方が良い。)
 		score = model.evaluate(test_input, test_label, verbose=0)
+		print('%07d : loss=%f, acc=%f' % (epoch, score[0], score[1]))
 		
 		epoch = epoch + 100
-		print('%07d : loss=%f, acc=%f' % (epoch, score[0], score[1]))
-		#print(model.metrics_names['accuracy'])
 	
 	# 20データだけ値表示
 	instant_num = 20
