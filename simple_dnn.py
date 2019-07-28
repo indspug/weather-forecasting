@@ -18,21 +18,20 @@ RAINFALL_INDEX=0
 # 指定したディレクトリしたCSVファイル群から気象データを読み込み、
 # 学習に必要なデータを抽出して返す
 # [Args]
-#   dirpath : CSVファイルが格納されたディレクトリのパス
-#   csv_data : CSVファイルから取り出した気象データ(stringのlist)
+#   dirpath  : CSVファイルが格納されたディレクトリのパス
 # [Return]
 #   input_data : 入力データ(ndarray)
 #   label_data : 出力データ(ndarray)
 ##################################################
 def extract_learning_data(dirpath):
 	
+	print 'ディレクトリ: ' + dirpath
+	
 	input_data_list = []
 	label_data_list = []
 	
-	csv_paths = get_filepaths(dirpath, 'csv')
+	csv_paths = get_filepaths(dirpath, '.csv')
 	for csv_path in csv_paths:
-		
-		print csv_path
 		
 		# CSVファイル読み込み
 		csv_data = read_weather_csv(csv_path)
@@ -72,10 +71,12 @@ def extract_learning_data(dirpath):
 	for i in range(2, len(label_data_list)):
 		label_data = numpy.vstack([label_data, label_data_list[i]])
 	
-	print input_data.shape
+	print '  読込データ数: %d' % input_data.shape[0]
 	
 	# 入力データ・出力データにNaNが含まれている行を削る
 	input_data, label_data = remove_nan_data(input_data, label_data)
+	
+	print '  NaNデータ削除後: %d' % input_data.shape[0]
 	
 	# 不整合データを削除する
 	is_inconsistency_row = check_rainfall_inconsistency(
@@ -83,7 +84,7 @@ def extract_learning_data(dirpath):
 	input_data = input_data[~is_inconsistency_row,]
 	label_data = label_data[~is_inconsistency_row,]
 	
-	print input_data.shape
+	print '  不整合データ削除後: %d' % input_data.shape[0]
 	
 	return (input_data, label_data)
 	

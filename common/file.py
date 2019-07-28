@@ -21,10 +21,14 @@ def get_filepaths(dirpath, extension):
 	filepaths = []
 	
 	for filename in os.listdir(dirpath):
-		if not os.path.isdir(dirpath + '/' + filename):
-			pass
+		# ディレクトリの場合はpass
+		if os.path.isdir(dirpath + '/' + filename):
+			continue
+		
+		# 拡張子が一致したらリストに追加
 		base,ext = os.path.splitext(filename)
-		filepaths.append(dirpath + '/' + filename)
+		if ext == extension:
+			filepaths.append(dirpath + '/' + filename)
 	
 	return filepaths
 

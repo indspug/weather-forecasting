@@ -70,7 +70,7 @@ cd weather_forecasting
 source bin/activate
 ```
 
-仮想環境にnumpyをインストールする。
+仮想環境にnumpy,tensorflow,kerasをインストールする。
 ```bash
 pip install numpy
 pip install tensorflow
@@ -106,7 +106,7 @@ cd weather_forecasting
 source bin/activate
 ```
 
-仮想環境にnumpyをインストールする。
+仮想環境にnumpy,tensorflow,kerasをインストールする。
 ```bash
 pip3 install numpy
 pip3 install tensorflow
