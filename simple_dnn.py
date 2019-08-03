@@ -11,7 +11,7 @@ import numpy
 import keras
 from keras import optimizers
 from keras.models import Sequential
-from keras.layers import Dense, Activation
+from keras.layers import Dense, Activation, Dropout
 
 POINT_NAME = '水戸'
 MODEL_DIR  = 'ckpt'	# モデル保存先ディレクトリ
@@ -20,7 +20,7 @@ NUM_EPOCH = 10		# 何回繰り返し学習させるか
 NUM_TRAING = 100	# 学習回数(NUM_TRAING * NUM_EPOCH)
 SAVE_CYCLE = 10		# 保存周期(N回学習につき1回保存)
 RESULT_FILE = 'result.csv'	# 学習経過保存ファイル
-OUTPUT_CYCLE = 10		# 学習経過出力周期(N回学習につき1回出力)
+OUTPUT_CYCLE = 1		# 学習経過出力周期(N回学習につき1回出力)
 RAINFALL_INDEX = 0
 
 ##################################################
@@ -168,8 +168,10 @@ if __name__ == '__main__':
 	model = Sequential()
 	model.add(Dense(32, input_dim=input_data_dim))
 	model.add(Activation('relu'))
+	model.add(Dropout(rate=0.5)),
 	model.add(Dense(32))
 	model.add(Activation('relu'))
+	model.add(Dropout(rate=0.5)),
 	model.add(Dense(label_num))
 	model.add(Activation('softmax'))
 	#model = model_from_json('ckpt/model_0009.json')
