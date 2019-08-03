@@ -5,7 +5,7 @@
   
 import sys, os
 from common.file import *
-from format.extract import *
+from format import *
 import csv
 import numpy
 

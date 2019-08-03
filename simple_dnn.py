@@ -2,18 +2,20 @@
   
 import sys, os
 from common.file import *
-from format.extract import *
-from format.validate import *
+from format import *
 from common.processing import *
-import csv
+from model import *
 import numpy
 import keras
 from keras import optimizers
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 
-POINT_NAME='水戸'
-RAINFALL_INDEX=0
+POINT_NAME = '水戸'
+MODEL_DIR  = 'ckpt'
+MODEL_NAME = 'model'
+ONE_EPOCH = 100
+RAINFALL_INDEX = 0
 
 ##################################################
 # 指定したディレクトリしたCSVファイル群から気象データを読み込み、
@@ -128,7 +130,7 @@ if __name__ == '__main__':
 	model.add(Activation('relu'))
 	model.add(Dense(label_num))
 	model.add(Activation('softmax'))
-	#model.summary()
+	#model = model_from_json('ckpt/model_0009.json')
 	
 	#optimizer = optimizers.SGD(lr=0.01)
 	#optimizer = optimizers.Adam(lr=0.001)
@@ -137,14 +139,15 @@ if __name__ == '__main__':
 		optimizer=optimizer,
 		loss='categorical_crossentropy',
 		metrics=['accuracy'])
+	#load_weights(model, 'ckpt/model_0009.h5')
 	
 	# 学習実行
-	epoch = 0
-	for i in range(1):
+	epoch = 0	# epoch : 一つの訓練データを何回繰り返して学習させるか
+	for i in range(10):
                 # 学習
 		model.fit(
 			train_input, train_label, 
-			epochs=100, batch_size=16, shuffle=True, verbose=0)
+			epochs=ONE_EPOCH, batch_size=16, shuffle=True, verbose=0)
 		
 		# 評価
 		#  loss: 損失値(正解データとの誤差。小さい方が良い。)
@@ -152,13 +155,15 @@ if __name__ == '__main__':
 		score = model.evaluate(test_input, test_label, verbose=0)
 		print('%07d : loss=%f, acc=%f' % (epoch, score[0], score[1]))
 		
-		epoch = epoch + 100
+		# 学習モデルの保存
+		save_model(model, MODEL_DIR, 'model', i)
+		#model_to_json(model, MODEL_DIR, 'model', i)
+		#model_to_yaml(model, MODEL_DIR, 'model', i)
+		#save_weights(model, MODEL_DIR, 'model', i)
+		
+		# エポック数の合計加算
+		epoch = epoch + ONE_EPOCH
 	
-	# 学習モデルの保存
-	json_string = model.to_json()
-	open(os.path.join('model','model.json'), 'w').write(json_string)
-	yaml_string = model.to_json()
-	open(os.path.join('model','model.yaml'), 'w').write(yaml_string)
 	
 	# 20データだけ値表示
 	instant_num = 20
