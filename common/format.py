@@ -265,12 +265,12 @@ def get_value_array(input_data, value_index, quality_index):
 def get_temperature(input_data, point_name):
 	
 	# 気温の値が格納されている列のインデックスを取得する
-	value_index = get_col_index(input_data, point_name, '気温', '')
+	value_index = get_col_index(input_data, point_name, '気温(℃)', '')
 	if value_index < 0 :
 		raise Exception('No data')
 	
 	# 気温の品質情報が格納されている列のインデックスを取得する
-	quality_index = get_col_index(input_data, point_name, '気温', '品質情報')
+	quality_index = get_col_index(input_data, point_name, '気温(℃)', '品質情報')
 	
 	# 気温の値のみの配列を取得する
 	temperature = get_value_array(input_data, value_index, quality_index)
