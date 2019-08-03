@@ -2,7 +2,8 @@
   
 import sys, os
 from common.file import *
-from common.format import *
+from format.extract import *
+from format.validate import *
 from common.processing import *
 import csv
 import numpy
@@ -79,7 +80,7 @@ def extract_learning_data(dirpath):
 	print '  NaNデータ削除後: %d' % input_data.shape[0]
 	
 	# 不整合データを削除する
-	is_inconsistency_row = check_rainfall_inconsistency(
+	is_inconsistency_row = validate_rainfall_inconsistency(
 		input_data[:,RAINFALL_INDEX], label_data)
 	input_data = input_data[~is_inconsistency_row,]
 	label_data = label_data[~is_inconsistency_row,]
@@ -101,7 +102,7 @@ if __name__ == '__main__':
 	argc = len(argvs)
 	if argc < 2:
 		exe_name=argvs[0]
-		print('Usage: python3 %s [train_csv_dirpath] [test_csv_dirpath]' % exe_name)
+		print('Usage: python %s [train_csv_dirpath] [test_csv_dirpath]' % exe_name)
 		quit()
 	
 	# CSVファイルパス取り出し
@@ -139,7 +140,7 @@ if __name__ == '__main__':
 	
 	# 学習実行
 	epoch = 0
-	for i in range(100):
+	for i in range(1):
                 # 学習
 		model.fit(
 			train_input, train_label, 
@@ -152,6 +153,12 @@ if __name__ == '__main__':
 		print('%07d : loss=%f, acc=%f' % (epoch, score[0], score[1]))
 		
 		epoch = epoch + 100
+	
+	# 学習モデルの保存
+	json_string = model.to_json()
+	open(os.path.join('model','model.json'), 'w').write(json_string)
+	yaml_string = model.to_json()
+	open(os.path.join('model','model.yaml'), 'w').write(yaml_string)
 	
 	# 20データだけ値表示
 	instant_num = 20

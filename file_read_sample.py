@@ -5,7 +5,7 @@
   
 import sys, os
 from common.file import *
-from common.format import *
+from format.extract import *
 import csv
 import numpy
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 		# (1-5) 結合したデータを一旦リストに退避
 		input_data_list.append(input_data)
 	
-	# (1-5) 全CSVファイルのデータを結合する。
+	# (1-6) 全CSVファイルのデータを結合する。
 	#       こちらは(1-4)と異なり、縦方向の結合
 	input_data = input_data_list[0]
 	for i in range(2, len(input_data_list)):

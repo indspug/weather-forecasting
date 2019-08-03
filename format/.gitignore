@@ -1,0 +1,6 @@
+# .pycは無視する
+*.pyc
+
+# __pycache__は無視する
+/__pycache__/
+
