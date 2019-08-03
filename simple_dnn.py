@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
   
 import sys, os
+import time
+import datetime
 from common.file import *
 from format import *
 from common.processing import *
@@ -12,9 +14,13 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 
 POINT_NAME = '水戸'
-MODEL_DIR  = 'ckpt'
-MODEL_NAME = 'model'
-ONE_EPOCH = 100
+MODEL_DIR  = 'ckpt'	# モデル保存先ディレクトリ
+MODEL_NAME = 'model'	# 保存するモデルのファイル名
+NUM_EPOCH = 10		# 何回繰り返し学習させるか
+NUM_TRAING = 100	# 学習回数(NUM_TRAING * NUM_EPOCH)
+SAVE_CYCLE = 10		# 保存周期(N回学習につき1回保存)
+RESULT_FILE = 'result.csv'	# 学習経過保存ファイル
+OUTPUT_CYCLE = 10		# 学習経過出力周期(N回学習につき1回出力)
 RAINFALL_INDEX = 0
 
 ##################################################
@@ -92,6 +98,42 @@ def extract_learning_data(dirpath):
 	return (input_data, label_data)
 	
 ##################################################
+# 学習経過ファイルのヘッダーを出力する。
+##################################################
+def output_result_header():
+	
+	fo = open(RESULT_FILE, 'a')
+	fo.write('##################################################\n')
+	fo.write('入力データ = 降水量 相対湿度 海面気圧\n')
+	fo.write('model = 3 x 32 x 32 x 3\n')
+	fo.write('optimizer = RMSprop(lr=0.001)\n')
+	fo.write('date: ' + get_datetime_string() + '\n')
+	fo.write('##################################################\n')
+	fo.write('epoch, loss, acc, elapsed_time\n')
+	fo.close()
+	
+##################################################
+# 学習経過をCSV形式でファイルに出力する。
+##################################################
+def output_result(format, objects):
+	
+	fo = open(RESULT_FILE, 'a')
+	#fo.write( "%d, %f, %f, %f\n" % (epoch, loss, acc, elapsed_time) )
+	fo.write( format % objects )
+	fo.close()
+	
+##################################################
+# 日付の文字列表現を返す
+##################################################
+def get_datetime_string():
+	
+	dn = datetime.datetime.now()
+	return "%04d/%02d/%02d %02d:%02d:%02d" % (
+		dn.year, dn.month, dn.day,
+		dn.hour, dn.minute, dn.second	
+	)
+	
+##################################################
 # メイン
 # [Args]
 #   train_csv_dirpath : 訓練用CSVファイルを格納したディレクトリのパス
@@ -141,29 +183,41 @@ if __name__ == '__main__':
 		metrics=['accuracy'])
 	#load_weights(model, 'ckpt/model_0009.h5')
 	
+	# 学習経過保存ファイルのヘッダー出力
+	output_result_header()
+	
 	# 学習実行
 	epoch = 0	# epoch : 一つの訓練データを何回繰り返して学習させるか
-	for i in range(10):
+	start_time = time.time()
+	for i in range(NUM_TRAING):
                 # 学習
 		model.fit(
 			train_input, train_label, 
-			epochs=ONE_EPOCH, batch_size=16, shuffle=True, verbose=0)
+			epochs=NUM_EPOCH, batch_size=16, shuffle=True, verbose=0)
 		
 		# 評価
 		#  loss: 損失値(正解データとの誤差。小さい方が良い。)
 		#  acc : 評価値(正解率。高い方が良い。)
 		score = model.evaluate(test_input, test_label, verbose=0)
-		print('%07d : loss=%f, acc=%f' % (epoch, score[0], score[1]))
-		
-		# 学習モデルの保存
-		save_model(model, MODEL_DIR, 'model', i)
-		#model_to_json(model, MODEL_DIR, 'model', i)
-		#model_to_yaml(model, MODEL_DIR, 'model', i)
-		#save_weights(model, MODEL_DIR, 'model', i)
+		loss = score[0]
+		acc = score[1]
+		print('%07d : loss=%f, acc=%f' % (epoch, loss, acc))
 		
 		# エポック数の合計加算
-		epoch = epoch + ONE_EPOCH
+		epoch = epoch + NUM_EPOCH
 	
+		# 学習モデルの保存
+		if (i % SAVE_CYCLE) == 0 :
+			save_model(model, MODEL_DIR, 'model', i)
+			#model_to_json(model, MODEL_DIR, 'model', i)
+			#model_to_yaml(model, MODEL_DIR, 'model', i)
+			#save_weights(model, MODEL_DIR, 'model', i)
+		
+		# 学習経過の保存
+		if (i % OUTPUT_CYCLE) == 0 :
+			elapsed_time = time.time() - start_time
+			output_result( "%d, %f, %f, %f\n", (epoch, loss, acc, elapsed_time) )
+		
 	
 	# 20データだけ値表示
 	instant_num = 20
