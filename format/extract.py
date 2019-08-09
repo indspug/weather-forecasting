@@ -201,6 +201,57 @@ def get_datetime(input_data):
 	return datetime
 	
 ##################################################
+# 入力データ(input_data)から雲量を
+# 抽出し整形して返す
+##################################################
+def get_cloud_cover(input_data, point_name):
+	
+	# 雲量が格納されている列のインデックスを取得する
+	value_index = get_col_index(input_data, point_name, '雲量(10分比)', '', '')
+	if value_index < 0 :
+		raise Exception('No data')
+	
+	# 雲量の品質情報が格納されている列のインデックスを取得する
+	quality_index = get_col_index(input_data, point_name, '雲量(10分比)', '', '品質情報')
+	
+	# 最初の5,6行はヘッダーなので読み飛ばす
+	data_start_index = get_header_row_num(input_data) + ROW_HEADER_START - 1 
+	data_num = len(input_data) - data_start_index
+	cloud_cover = numpy.zeros(data_num, dtype=float)
+	
+	# 品質情報有り
+	if quality_index >= 0:
+		for i in range(data_num):
+			index = i + data_start_index
+			value = input_data[index][value_index]
+			quality = int(input_data[index][quality_index])
+			if quality >= ACCEPTABLE_QUALITY:
+				if value == '0+':
+					cloud_cover[i] = 0.5
+				elif value == '10-':
+					cloud_cover[i] = 9.5
+				else:
+					cloud_cover[i] = float(value)
+			else:
+				cloud_cover[i] = numpy.nan
+	# 品質情報無し
+	else:
+		for i in range(data_num):
+			index = i + data_start_index
+			value = input_data[index][value_index]
+			if not value:
+				cloud_cover[i] = numpy.nan
+			else:
+				if value == '0+':
+					cloud_cover[i] = 0.5
+				elif value == '10-':
+					cloud_cover[i] = 9.5
+				else:
+					cloud_cover[i] = float(value)
+	
+	return cloud_cover
+	
+##################################################
 # 入力データ(input_data)から天気を抽出し整形して返す
 # (晴れ、曇り、雨に分類)
 ##################################################

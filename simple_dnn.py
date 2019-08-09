@@ -17,7 +17,7 @@ POINT_NAME = '水戸'
 MODEL_DIR  = 'ckpt'	# モデル保存先ディレクトリ
 MODEL_NAME = 'model'	# 保存するモデルのファイル名
 NUM_EPOCH = 10		# 何回繰り返し学習させるか
-NUM_TRAING = 100	# 学習回数(NUM_TRAING * NUM_EPOCH)
+NUM_TRAING = 300	# 学習回数(NUM_TRAING * NUM_EPOCH)
 SAVE_CYCLE = 10		# 保存周期(N回学習につき1回保存)
 RESULT_FILE = 'result.csv'	# 学習経過保存ファイル
 OUTPUT_CYCLE = 1		# 学習経過出力周期(N回学習につき1回出力)
@@ -49,6 +49,7 @@ def extract_learning_data(dirpath):
 		rainfall = get_rainfall(csv_data, POINT_NAME)
 		humidity = get_humidity(csv_data, POINT_NAME)
 		sea_level_pressure = get_sea_level_pressure(csv_data, POINT_NAME)
+		cloud_cover = get_cloud_cover(csv_data,POINT_NAME)
 		#temperature = get_temperature(csv_data, POINT_NAME)
 		#wind_speed = get_wind_speed(csv_data, POINT_NAME)
 		#wind_dir = get_wind_direction(csv_data, POINT_NAME)
@@ -63,7 +64,7 @@ def extract_learning_data(dirpath):
 	
 		# 入力データ結合
 		input_data = numpy.stack(
-			[rainfall, humidity, sea_level_pressure], 1)
+			[rainfall, humidity, sea_level_pressure, cloud_cover], 1)
 		
 		# 出力データ取得：天気
 		label_data = get_weather(csv_data, POINT_NAME)
@@ -135,8 +136,8 @@ def output_result_header():
 	
 	fo = open(RESULT_FILE, 'a')
 	fo.write('##################################################\n')
-	fo.write('入力データ = 降水量 相対湿度 海面気圧\n')
-	fo.write('model = 3 x 32 x 32 x 3\n')
+	fo.write('入力データ = 降水量 相対湿度 海面気圧 雲量\n')
+	fo.write('model = 4 x 32 x 32 x 3\n')
 	fo.write('optimizer = RMSprop(lr=0.001)\n')
 	fo.write('date: ' + get_datetime_string() + '\n')
 	fo.write('##################################################\n')
