@@ -15,6 +15,24 @@ from keras.optimizers import Adam
 LENGTH_OF_SEQUENCES = 24
 
 ##################################################
+# 学習用データ取得
+##################################################
+def load_temperature(dir_path):
+	
+	data = numpy.array([])
+	
+	csv_paths = get_filepaths(dir_path, '.csv')
+	for csv_path in csv_paths:
+		point_name = '水戸'
+		csv_data = read_weather_csv(csv_path)
+		temperature = get_temperature(csv_data, point_name)
+		data = numpy.append(data, temperature)
+		
+	re_data = numpy.array(data).reshape(data.shape[0], 1)
+	
+	return re_data
+	
+##################################################
 # データセット作成(気温)
 ##################################################
 def make_dataset_temperature(input_data):
@@ -37,19 +55,11 @@ def make_dataset_temperature(input_data):
 ##################################################
 if __name__ == '__main__':
 	
-	train_csv = './train/mito_20170101-20170115data.csv'
-	test_csv  = './train/mito_20170116-20170131data.csv'
-	
-	# 学習用ファイル読込
-	csv_data = read_weather_csv(train_csv)
-	
-	# 気温取得
-	point_name = '水戸'
-	temperature = get_temperature(csv_data, point_name)
-	input_data = numpy.stack( [temperature], 1 )
+	# 学習用データ取得
+	train_data = load_temperature('./train')
 	
 	# データセット作成
-	g, h = make_dataset_temperature(input_data)
+	input, target = make_dataset_temperature(train_data)
 	
 	# モデル作成
 	model = Sequential()
@@ -62,20 +72,23 @@ if __name__ == '__main__':
 	model.compile(loss='mean_squared_error', optimizer=optimizer)
 	
 	# 学習実行
-	model.fit(g, h, batch_size=64, nb_epoch=100, validation_split=0.05)
+	model.fit(input, target, batch_size=64, nb_epoch=10, validation_split=0.05)
+	
+	# テスト用データ取得
+	test_data = load_temperature('./test')
+	input, target = make_dataset_temperature(test_data)
 	
 	# 結果出力
-	predicted = model.predict(g)
-	print(predicted.shape)
+	predicted = model.predict(input)
 	fo = open('./rnn_result.csv', 'w')
-	input_data_len = input_data.shape[0]
-	for i in range(input_data_len):
-		correct = input_data[i,0]
+	test_data_len = test_data.shape[0]
+	for i in range(test_data_len):
+		correct = test_data[i,0]
 		if i < LENGTH_OF_SEQUENCES:
 			fo.write('%f,\n' % (correct) )
-			print('%f,' % (correct) )
+			#print('%f,' % (correct) )
 		else:
 			pi = i - LENGTH_OF_SEQUENCES
 			fo.write('%f,%f\n' % (correct, predicted[pi]) )
-			print('%f,%f' % (correct, predicted[pi]) )
+			#print('%f,%f' % (correct, predicted[pi]) )
 	
