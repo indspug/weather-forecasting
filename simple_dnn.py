@@ -98,6 +98,37 @@ def extract_learning_data(dirpath):
 	return (input_data, label_data)
 	
 ##################################################
+# 学習モデルを作成する
+##################################################
+def make_model(input_data_dim, label_num):
+	
+	# モデルの作成
+	#  3 x 32 x 32 x 3 
+	model = Sequential()
+	model.add(Dense(32, input_dim=input_data_dim))
+	model.add(Activation('relu'))
+	model.add(Dropout(rate=0.5)),
+	model.add(Dense(32))
+	model.add(Activation('relu'))
+	model.add(Dropout(rate=0.5)),
+	model.add(Dense(label_num))
+	model.add(Activation('softmax'))
+	#model = model_from_json('ckpt/model_0009.json')
+	
+	#optimizer = optimizers.SGD(lr=0.01)
+	#optimizer = optimizers.Adam(lr=0.001)
+	optimizer = optimizers.RMSprop(lr=0.001)
+	
+	model.compile(
+		optimizer=optimizer,
+		loss='categorical_crossentropy',
+		metrics=['accuracy'])
+	
+	#load_weights(model, 'ckpt/model_0009.h5')
+	
+	return model
+	
+##################################################
 # 学習経過ファイルのヘッダーを出力する。
 ##################################################
 def output_result_header():
@@ -109,17 +140,7 @@ def output_result_header():
 	fo.write('optimizer = RMSprop(lr=0.001)\n')
 	fo.write('date: ' + get_datetime_string() + '\n')
 	fo.write('##################################################\n')
-	fo.write('epoch, loss, acc, elapsed_time\n')
-	fo.close()
-	
-##################################################
-# 学習経過をCSV形式でファイルに出力する。
-##################################################
-def output_result(format, objects):
-	
-	fo = open(RESULT_FILE, 'a')
-	#fo.write( "%d, %f, %f, %f\n" % (epoch, loss, acc, elapsed_time) )
-	fo.write( format % objects )
+	fo.write('epoch, loss, acc, elapsed_time, acc_sunny, acc_cloudy, acc_rainy\n')
 	fo.close()
 	
 ##################################################
@@ -132,6 +153,54 @@ def get_datetime_string():
 		dn.year, dn.month, dn.day,
 		dn.hour, dn.minute, dn.second	
 	)
+	
+##################################################
+# 天気ごとの正解率を計算する。
+##################################################
+def get_acc_by_weather(model, input_data, label_data, random_num):
+	
+	data_num = input_data.shape[0]
+	label_num = label_data.shape[1]
+	acc = [0] * label_num
+	num = [0] * label_num
+	
+	# ランダムでデータ取り出し
+	rand_index = numpy.random.randint(0, data_num, size=random_num)
+	random_input = input_data[rand_index]
+	random_label = label_data[rand_index]
+	
+	# 予測
+	predict_label = model.predict(random_input)
+	
+	# 正解と予測結果を比較正解率の計算
+	for i in range(random_num):
+		
+		# 正解
+		correct_idx = numpy.argmax(random_label[i])
+		
+		# 学習モデルで予測した結果
+		predict_idx = numpy.argmax(predict_label[i])
+		
+		num[correct_idx] += 1
+		if correct_idx == predict_idx:
+			acc[correct_idx] += 1.0
+	
+	# 正解率の計算
+	for i in range(label_num):
+		if num[i] > 0:
+			acc[i] /= num[i]
+	
+	return tuple(acc)
+
+##################################################
+# 学習経過をCSV形式でファイルに出力する。
+##################################################
+def output_result(format, objects):
+	
+	fo = open(RESULT_FILE, 'a')
+	#fo.write( "%d, %f, %f, %f\n" % (epoch, loss, acc, elapsed_time) )
+	fo.write( format % objects )
+	fo.close()
 	
 ##################################################
 # メイン
@@ -162,28 +231,9 @@ if __name__ == '__main__':
 	train_input, test_input = max_min_normalize([train_input, test_input], axis=0)
 	
 	# モデルの作成
-	#  3 x 32 x 32 x 3 
 	input_data_dim = train_input.shape[1]
 	label_num = train_label.shape[1]
-	model = Sequential()
-	model.add(Dense(32, input_dim=input_data_dim))
-	model.add(Activation('relu'))
-	model.add(Dropout(rate=0.5)),
-	model.add(Dense(32))
-	model.add(Activation('relu'))
-	model.add(Dropout(rate=0.5)),
-	model.add(Dense(label_num))
-	model.add(Activation('softmax'))
-	#model = model_from_json('ckpt/model_0009.json')
-	
-	#optimizer = optimizers.SGD(lr=0.01)
-	#optimizer = optimizers.Adam(lr=0.001)
-	optimizer = optimizers.RMSprop(lr=0.001)
-	model.compile(
-		optimizer=optimizer,
-		loss='categorical_crossentropy',
-		metrics=['accuracy'])
-	#load_weights(model, 'ckpt/model_0009.h5')
+	model = make_model(input_data_dim, label_num)
 	
 	# 学習経過保存ファイルのヘッダー出力
 	output_result_header()
@@ -195,7 +245,7 @@ if __name__ == '__main__':
                 # 学習
 		model.fit(
 			train_input, train_label, 
-			epochs=NUM_EPOCH, batch_size=16, shuffle=True, verbose=0)
+			epochs=NUM_EPOCH, batch_size=128, shuffle=True, verbose=0)
 		
 		# 評価
 		#  loss: 損失値(正解データとの誤差。小さい方が良い。)
@@ -211,24 +261,11 @@ if __name__ == '__main__':
 		# 学習モデルの保存
 		if (i % SAVE_CYCLE) == 0 :
 			save_model(model, MODEL_DIR, 'model', i)
-			#model_to_json(model, MODEL_DIR, 'model', i)
-			#model_to_yaml(model, MODEL_DIR, 'model', i)
-			#save_weights(model, MODEL_DIR, 'model', i)
 		
 		# 学習経過の保存
 		if (i % OUTPUT_CYCLE) == 0 :
 			elapsed_time = time.time() - start_time
-			output_result( "%d, %f, %f, %f\n", (epoch, loss, acc, elapsed_time) )
+			acc_w = get_acc_by_weather(model, test_input, test_label, 100)
+			output_result( "%d, %f, %f, %f, %f, %f, %f\n", 
+			               (epoch, loss, acc, elapsed_time, acc_w[0], acc_w[1], acc_w[2]) )
 		
-	
-	# 20データだけ値表示
-	instant_num = 20
-	instant_input = test_input[0:instant_num,]
-	actual_label = test_label[0:instant_num,]
-	for i in range(instant_num):
-		predict_label = model.predict(instant_input)
-		print('####################################')
-		print(instant_input[i])
-		print(predict_label[i])
-		print(actual_label[i])
-	
