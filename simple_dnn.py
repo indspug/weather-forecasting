@@ -17,7 +17,7 @@ POINT_NAME = '水戸'
 MODEL_DIR  = 'ckpt'	# モデル保存先ディレクトリ
 MODEL_NAME = 'model'	# 保存するモデルのファイル名
 NUM_EPOCH = 10		# 何回繰り返し学習させるか
-NUM_TRAING = 300	# 学習回数(NUM_TRAING * NUM_EPOCH)
+NUM_TRAING = 100	# 学習回数(NUM_TRAING * NUM_EPOCH)
 SAVE_CYCLE = 10		# 保存周期(N回学習につき1回保存)
 RESULT_FILE = 'result.csv'	# 学習経過保存ファイル
 OUTPUT_CYCLE = 1		# 学習経過出力周期(N回学習につき1回出力)
@@ -84,9 +84,13 @@ def extract_learning_data(dirpath):
 	print '  読込データ数: %d' % input_data.shape[0]
 	
 	# 入力データ・出力データにNaNが含まれている行を削る
-	input_data, label_data = remove_nan_data(input_data, label_data)
+	#input_data, label_data = remove_nan_data(input_data, label_data)
+	#print '  NaNデータ削除後: %d' % input_data.shape[0]
 	
-	print '  NaNデータ削除後: %d' % input_data.shape[0]
+	# 入力データにNaNが含まれているデータを補間する
+	input_data = interpolate_nan_input_data(input_data)
+	label_data = interpolate_nan_label_data(label_data)
+	
 	
 	# 不整合データを削除する
 	is_inconsistency_row = validate_rainfall_inconsistency(
@@ -268,5 +272,6 @@ if __name__ == '__main__':
 			elapsed_time = time.time() - start_time
 			acc_w = get_acc_by_weather(model, test_input, test_label, 100)
 			output_result( "%d, %f, %f, %f, %f, %f, %f\n", 
-			               (epoch, loss, acc, elapsed_time, acc_w[0], acc_w[1], acc_w[2]) )
+			               (epoch, loss, acc, elapsed_time, 
+			                acc_w[0], acc_w[1], acc_w[2]) )
 		

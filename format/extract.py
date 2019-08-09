@@ -282,14 +282,14 @@ def get_weather(input_data, point_name):
 				j = WEATHER_CLASSIFY_MAP[value]
 				weather_array[i,j] = 1.0
 			else:
-				weather_array[i,0] = numpy.nan
+				weather_array[i,0:WEATHER_CLASS_NUM] = numpy.nan
 	# 品質情報無し
 	else:
 		for i in range(data_num):
 			index = i + data_start_index
 			value = input_data[index][value_index]
 			if not value:
-				weather_array[i,0] = numpy.nan
+				weather_array[i,0:WEATHER_CLASS_NUM] = numpy.nan
 			else:
 				value = int(value)
 				j = WEATHER_CLASSIFY_MAP[value]

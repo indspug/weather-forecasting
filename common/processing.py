@@ -63,6 +63,98 @@ def remove_nan_data(input_data, label_data):
 	return input_data, label_data
 
 ##################################################
+# 入力データにNaNが含まれる行がある場合は
+# 付近のデータで補間する
+##################################################
+def interpolate_nan_input_data(input_data):
+	
+	# NaNでない行を取得する
+	not_isnan = ~numpy.isnan(input_data)
+	row_num, col_num = input_data.shape
+	
+	for col in range(col_num):
+		not_isnan_row1 = -1
+		not_isnan_row2 = -1
+		
+		for row in range(row_num):
+			# NaNでないデータが見つかったら補間を行う
+			if not_isnan[row][col]:
+				# NaNでないデータの行Noを更新する
+				not_isnan_row1 = not_isnan_row2
+				not_isnan_row2 = row
+				if (not_isnan_row2 - not_isnan_row1) == 1 :
+					continue
+				if not_isnan_row1 >= 0:
+					# row1〜row2のうち、半分はrow1,もう半分はrow2の
+					# 値で補間する
+					row_mean = (not_isnan_row1 + not_isnan_row2 + 1) / 2
+					
+					not_isnan_data1 = input_data[row][col]
+					for i in range(not_isnan_row1+1, row_mean):
+						input_data[i][col] = not_isnan_data1
+					
+					not_isnan_data2 = input_data[row][col]
+					for i in range(row_mean, not_isnan_row2):
+						input_data[i][col] = not_isnan_data2
+				else:
+					# 先頭から初めてNaNでないデータが見つかった場合
+					not_isnan_data2 = input_data[row][col]
+					for i in range(0, row):
+						input_data[i][col] = not_isnan_data2
+		
+		# 末尾の方にNaNがある場合も補間する
+		not_isnan_data2 = input_data[not_isnan_row2][col]
+		for i in range(not_isnan_row2+1, row_num):
+			input_data[i][col] = not_isnan_data2
+	
+	return input_data
+		
+##################################################
+# 出力データにNaNが含まれる行がある場合は
+# 付近のデータで補間する
+##################################################
+def interpolate_nan_label_data(label_data):
+	
+	# NaNでない行を取得する
+	not_isnan_row = ~numpy.isnan(label_data).any(axis=1)
+	row_num, col_num = label_data.shape
+	
+	not_isnan_row1 = -1
+	not_isnan_row2 = -1
+	for row in range(row_num):
+		# NaNでないデータが見つかったら補間を行う
+		if not_isnan_row[row]:
+			# NaNでないデータの行Noを更新する
+			not_isnan_row1 = not_isnan_row2
+			not_isnan_row2 = row
+			if (not_isnan_row2 - not_isnan_row1) == 1 :
+				continue
+			if not_isnan_row1 >= 0:
+				# row1〜row2のうち、半分はrow1,もう半分はrow2の
+				# 値で補間する
+				row_mean = (not_isnan_row1 + not_isnan_row2 + 1) / 2
+				
+				not_isnan_data1 = label_data[row]
+				for i in range(not_isnan_row1+1, row_mean):
+					label_data[i] = not_isnan_data1
+				
+				not_isnan_data2 = label_data[row]
+				for i in range(row_mean, not_isnan_row2):
+					label_data[i] = not_isnan_data2
+			else:
+				# 先頭から初めてNaNでないデータが見つかった場合
+				not_isnan_data2 = label_data[row]
+				for i in range(0, row):
+					label_data[i] = not_isnan_data2
+		
+	# 末尾の方にNaNがある場合も補間する
+	not_isnan_data2 = label_data[not_isnan_row2]
+	for i in range(not_isnan_row2+1, row_num):
+		label_data[i] = not_isnan_data2
+
+	return label_data
+
+##################################################
 # 年月日時から各要素(年,月,日,時)を抽出する
 ##################################################
 def extract_element_from_datetime(datetime):
