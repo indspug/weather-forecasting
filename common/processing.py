@@ -6,6 +6,18 @@
 
 import math, numpy
 import re
+from sklearn.preprocessing import MinMaxScaler
+
+##################################################
+# Max-Minスケール化(0〜1の範囲に収まるように標準化)
+##################################################
+def max_min_scale(train_data, test_data):
+	
+	scaler = MinMaxScaler()
+	train_scaled = scaler.fit_transform(train_data)
+	test_scaled  = scaler.transform(test_data)
+	
+	return scaler, train_scaled, test_scaled
 
 ##################################################
 # データ(data_list)をMAX-MIN標準化した結果を返す

@@ -297,3 +297,27 @@ def get_weather(input_data, point_name):
 	
 	return weather_array
 
+##################################################
+# 入力データ(input_data)から天気を抽出して返す
+#   - 0〜1の範囲の値に変換して返す
+#   - 晴れ,曇り,雨の3分類なら、晴れ:0.0, 曇り:0.5, 雨:1.0
+##################################################
+def get_variable_weather(input_data, point_name):
+	
+	# 天気のラベルデータを取得する
+	weather = get_weather(input_data, point_name)
+	
+	# データの入れ物準備と変換係数計算
+	weather_v = numpy.zeros( (weather.shape[0]) )
+	conv_rate = 1.0 / float(WEATHER_CLASS_NUM - 1)
+	
+	# 数値に変換した天気データを作成
+	for i,label in enumerate(weather):
+		if numpy.isnan(label[0]):
+			weather_v[i] = numpy.nan
+		else:
+			index = numpy.argmax(label)
+			weather_v[i] = float(index) * conv_rate
+	
+	return weather_v
+

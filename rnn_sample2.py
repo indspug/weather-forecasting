@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 '''
   RNNの動作確認用2
-    24時間分の気温,湿度から、3時間後の気温,湿度を予測する
+    24時間分の気温,湿度,気圧,天気から、3時間後の天気を予測する
 '''
 
 import sys, os
 import datetime
 from common.file import *
+from common.utility import *
 from common.processing import *
 from format import *
 import numpy
@@ -19,7 +20,7 @@ from keras import optimizers
 
 LENGTH_OF_SEQUENCES = 24	# 過去24時間のデータから予測する
 LENGTH_OF_SHIFT = 3 		# 3時間後のデータを予測する
-NUMBER_OF_INPUT_NODES = 3	# 入力データ数(気温,相対湿度,海面気圧)
+NUMBER_OF_INPUT_NODES = 4	# 入力データ数(気温,相対湿度,海面気圧)
 NUMBER_OF_HIDDEN_NODES = 64	# 隠れ層のノード数
 NUMBER_OF_OUTPUT_NODES = 3	# 出力データ数(晴れ,曇り,雨
 SIZE_OF_BATCH = 128		# バッチサイズ
@@ -38,7 +39,8 @@ def load_data(dir_path):
 	temperature = numpy.array([])
 	humidity = numpy.array([])
 	pressure = numpy.array([])
-	weather = numpy.array([])
+	weather_label = numpy.array([])
+	weather_value = numpy.array([])
 	
 	csv_paths = get_filepaths(dir_path, '.csv')
 	for csv_path in csv_paths:
@@ -50,14 +52,19 @@ def load_data(dir_path):
 		humidity = numpy.append(humidity, humi)
 		pres = get_sea_level_pressure(csv_data, point_name)
 		pressure = numpy.append(pressure, pres)
-		weat = get_weather(csv_data, point_name)
-		weather = numpy.append(weather, weat)
+		weat_v = get_variable_weather(csv_data, point_name)
+		weather_value = numpy.append(weather_value, weat_v)
+		weat_l = get_weather(csv_data, point_name)
+		weather_label = numpy.append(weather_label, weat_l)
 		
-	re_input = numpy.stack([temperature, humidity, pressure], 1)
-	re_target = numpy.reshape(weather, (weather.shape[0]/WEATHER_CLASS_NUM, WEATHER_CLASS_NUM))
+	re_input = numpy.stack([temperature, humidity, pressure, weather_value], 1)
+	re_target = numpy.reshape(weather_label,
+			(weather_label.shape[0]/WEATHER_CLASS_NUM, WEATHER_CLASS_NUM))
+	
+	re_input_interpolated  = interpolate_nan_input_data(re_input)
 	re_target_interpolated = interpolate_nan_label_data(re_target)
 	
-	return re_input, re_target_interpolated
+	return re_input_interpolated, re_target_interpolated
 	
 ##################################################
 # データセット作成
@@ -80,24 +87,13 @@ def make_dataset(input, target):
 	return re_input, re_target
 	
 ##################################################
-# Max-Minスケール化(0〜1の範囲に収まるように標準化)
-##################################################
-def max_min_scale(train_data, test_data):
-	
-	scaler = MinMaxScaler()
-	train_scaled = scaler.fit_transform(train_data)
-	test_scaled  = scaler.transform(test_data)
-	
-	return scaler, train_scaled, test_scaled
-	
-##################################################
 # 学習経過ファイルのヘッダーを出力する。
 ##################################################
 def output_whole_result_header():
 	
 	fo = open(RESULT_FILE_WHOLE, 'a')
 	fo.write('##################################################\n')
-	fo.write('入力データ = 気温 相対湿度 海面気圧\n')
+	fo.write('入力データ = 気温 相対湿度 海面気圧 天気\n')
 	fo.write('model = %d x LSTM(%dx%d)x DropOut(%d) x %d\n'
 		% (NUMBER_OF_INPUT_NODES, NUMBER_OF_INPUT_NODES,
 		   NUMBER_OF_HIDDEN_NODES, NUMBER_OF_OUTPUT_NODES, NUMBER_OF_OUTPUT_NODES) )
@@ -109,17 +105,6 @@ def output_whole_result_header():
 	fo.close()
 	
 ##################################################
-# 日付の文字列表現を返す
-##################################################
-def get_datetime_string():
-	
-	dn = datetime.datetime.now()
-	return "%04d/%02d/%02d %02d:%02d:%02d" % (
-		dn.year, dn.month, dn.day,
-		dn.hour, dn.minute, dn.second	
-	)
-
-##################################################
 # 学習結果をファイル出力する。
 ##################################################
 def output_result(input, target, predicted, number):
@@ -127,7 +112,7 @@ def output_result(input, target, predicted, number):
 	# 正解と予想結果をファイル出力
 	filename = str.format('%s_%03d.csv' % (RESULT_FILE_NAME, number) )
 	fo = open(filename, 'w')
-	fo.write('気温,湿度,気圧,晴れ,曇り,雨,晴れ(予測),曇り(予測),雨(予測),正解/不正解\n')
+	fo.write('気温,湿度,気圧,天気(値),晴れ,曇り,雨,晴れ(予測),曇り(予測),雨(予測),正解/不正解\n')
 	
 	# 全テストデータの正解と予想結果出力
 	data_len = input.shape[0]
@@ -139,8 +124,8 @@ def output_result(input, target, predicted, number):
 		
 		if i < (LENGTH_OF_SEQUENCES+LENGTH_OF_SHIFT):
 			# 予想結果が出せないデータの場合(最初の方)
-			fo.write('%f,%f,%f,%.2f,%.2f,%.2f\n' %
-				(input_i[0], input_i[1], input_i[2],
+			fo.write('%f,%f,%f,%f,%.2f,%.2f,%.2f\n' %
+				(input_i[0], input_i[1], input_i[2], input_i[3],
 				 target_i[0], target_i[1], target_i[2] ) )
 		else:
 			pi = i - LENGTH_OF_SEQUENCES - LENGTH_OF_SHIFT
@@ -150,8 +135,8 @@ def output_result(input, target, predicted, number):
 			predict_i = numpy.argmax(predicted[pi])
 			correct = 1 if (correct_i == predict_i) else 0
 			
-			fo.write('%f,%f,%f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n' % 
-				(input_i[0], input_i[1], input_i[2],
+			fo.write('%f,%f,%f,%f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n' % 
+				(input_i[0], input_i[1], input_i[2], input_i[3],
 				 target_i[0], target_i[1], target_i[2],
 				 predicted[pi,0], predicted[pi,1], predicted[pi,2],
 				 correct) )
