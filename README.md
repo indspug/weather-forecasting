@@ -13,6 +13,7 @@ Pythonで天気予測
 
 - python
 - numpy
+- scikit-learn
 - tensorflow
 - keras
 
@@ -73,6 +74,7 @@ source bin/activate
 仮想環境にnumpy,tensorflow,kerasをインストールする。
 ```bash
 pip install numpy
+pip install scikit-learn
 pip install tensorflow
 pip install keras
 ```
