@@ -20,14 +20,15 @@ from keras import optimizers
 LENGTH_OF_SEQUENCES = 24	# 過去24時間のデータから予測する
 LENGTH_OF_SHIFT = 3 		# 3時間後のデータを予測する
 NUMBER_OF_INPUT_NODES = 3	# 入力データ数(気温,相対湿度,海面気圧)
-NUMBER_OF_HIDDEN_NODES = 32	# 隠れ層のノード数
+NUMBER_OF_HIDDEN_NODES = 64	# 隠れ層のノード数
 NUMBER_OF_OUTPUT_NODES = 3	# 出力データ数(晴れ,曇り,雨
 SIZE_OF_BATCH = 128		# バッチサイズ
 DROPOUT_RATE = 0.2		# ドロップアウト率
 LEARNING_RATE = 0.001		# 学習率
 NUMBER_OF_EPOCHS = 10		# 1回の学習のエポック数
 NUMBER_OF_TRAINING = 50		# 学習回数
-RESULT_FILE_WHOLE = 'rnn_result_190812_02_whole.csv'
+RESULT_FILE_WHOLE = './result/rnn_result_190812_02_whole.csv'
+RESULT_FILE_NAME  = './result/rnn_result_190812_02'
 
 ##################################################
 # 学習用データ取得
@@ -97,8 +98,11 @@ def output_whole_result_header():
 	fo = open(RESULT_FILE_WHOLE, 'a')
 	fo.write('##################################################\n')
 	fo.write('入力データ = 気温 相対湿度 海面気圧\n')
-	fo.write('model = 3 x LSTM(3x128)x DropOut(3) x 3\n')
-	fo.write('optimizer = RMSprop(lr=0.001)\n')
+	fo.write('model = %d x LSTM(%dx%d)x DropOut(%d) x %d\n'
+		% (NUMBER_OF_INPUT_NODES, NUMBER_OF_INPUT_NODES,
+		   NUMBER_OF_HIDDEN_NODES, NUMBER_OF_OUTPUT_NODES, NUMBER_OF_OUTPUT_NODES) )
+	fo.write('dropout rate = %f\n' % (DROPOUT_RATE) )
+	fo.write('optimizer = RMSprop(lr=%f)\n' % (LEARNING_RATE) )
 	fo.write('date: ' + get_datetime_string() + '\n')
 	fo.write('##################################################\n')
 	fo.write('epoch,loss acc\n')
@@ -121,9 +125,9 @@ def get_datetime_string():
 def output_result(input, target, predicted, number):
 	
 	# 正解と予想結果をファイル出力
-	filename = str.format('./rnn_result_190812_02_%02d.csv' % (number) )
+	filename = str.format('%s_%03d.csv' % (RESULT_FILE_NAME, number) )
 	fo = open(filename, 'w')
-	fo.write('気温,湿度,気圧,晴れ,曇り,雨,晴れ(予測),曇り(予測),雨(予測))\n')
+	fo.write('気温,湿度,気圧,晴れ,曇り,雨,晴れ(予測),曇り(予測),雨(予測),正解/不正解\n')
 	
 	# 全テストデータの正解と予想結果出力
 	data_len = input.shape[0]
@@ -146,7 +150,7 @@ def output_result(input, target, predicted, number):
 			predict_i = numpy.argmax(predicted[pi])
 			correct = 1 if (correct_i == predict_i) else 0
 			
-			fo.write('%f,%f,%f%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n' % 
+			fo.write('%f,%f,%f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n' % 
 				(input_i[0], input_i[1], input_i[2],
 				 target_i[0], target_i[1], target_i[2],
 				 predicted[pi,0], predicted[pi,1], predicted[pi,2],
