@@ -5,6 +5,7 @@
 '''
 
 import sys, os
+import datetime
 from common.file import *
 from common.processing import *
 from format import *
@@ -19,13 +20,14 @@ from keras import optimizers
 LENGTH_OF_SEQUENCES = 24	# 過去24時間のデータから予測する
 LENGTH_OF_SHIFT = 3 		# 3時間後のデータを予測する
 NUMBER_OF_INPUT_NODES = 3	# 入力データ数(気温,相対湿度,海面気圧)
-NUMBER_OF_HIDDEN_NODES = 64	# 隠れ層のノード数
+NUMBER_OF_HIDDEN_NODES = 32	# 隠れ層のノード数
 NUMBER_OF_OUTPUT_NODES = 3	# 出力データ数(晴れ,曇り,雨
 SIZE_OF_BATCH = 128		# バッチサイズ
 DROPOUT_RATE = 0.2		# ドロップアウト率
 LEARNING_RATE = 0.001		# 学習率
 NUMBER_OF_EPOCHS = 10		# 1回の学習のエポック数
 NUMBER_OF_TRAINING = 50		# 学習回数
+RESULT_FILE_WHOLE = 'rnn_result_190812_02_whole.csv'
 
 ##################################################
 # 学習用データ取得
@@ -88,6 +90,71 @@ def max_min_scale(train_data, test_data):
 	return scaler, train_scaled, test_scaled
 	
 ##################################################
+# 学習経過ファイルのヘッダーを出力する。
+##################################################
+def output_whole_result_header():
+	
+	fo = open(RESULT_FILE_WHOLE, 'a')
+	fo.write('##################################################\n')
+	fo.write('入力データ = 気温 相対湿度 海面気圧\n')
+	fo.write('model = 3 x LSTM(3x128)x DropOut(3) x 3\n')
+	fo.write('optimizer = RMSprop(lr=0.001)\n')
+	fo.write('date: ' + get_datetime_string() + '\n')
+	fo.write('##################################################\n')
+	fo.write('epoch,loss acc\n')
+	fo.close()
+	
+##################################################
+# 日付の文字列表現を返す
+##################################################
+def get_datetime_string():
+	
+	dn = datetime.datetime.now()
+	return "%04d/%02d/%02d %02d:%02d:%02d" % (
+		dn.year, dn.month, dn.day,
+		dn.hour, dn.minute, dn.second	
+	)
+
+##################################################
+# 学習結果をファイル出力する。
+##################################################
+def output_result(input, target, predicted, number):
+	
+	# 正解と予想結果をファイル出力
+	filename = str.format('./rnn_result_190812_02_%02d.csv' % (number) )
+	fo = open(filename, 'w')
+	fo.write('気温,湿度,気圧,晴れ,曇り,雨,晴れ(予測),曇り(予測),雨(予測))\n')
+	
+	# 全テストデータの正解と予想結果出力
+	data_len = input.shape[0]
+	for i in range(data_len):
+		
+		# 入力と出力を取得
+		input_i = input[i]
+		target_i = target[i]
+		
+		if i < (LENGTH_OF_SEQUENCES+LENGTH_OF_SHIFT):
+			# 予想結果が出せないデータの場合(最初の方)
+			fo.write('%f,%f,%f,%.2f,%.2f,%.2f\n' %
+				(input_i[0], input_i[1], input_i[2],
+				 target_i[0], target_i[1], target_i[2] ) )
+		else:
+			pi = i - LENGTH_OF_SEQUENCES - LENGTH_OF_SHIFT
+			
+			# 正解/不正解を確認する
+			correct_i = numpy.argmax(target)
+			predict_i = numpy.argmax(predicted[pi])
+			correct = 1 if (correct_i == predict_i) else 0
+			
+			fo.write('%f,%f,%f%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n' % 
+				(input_i[0], input_i[1], input_i[2],
+				 target_i[0], target_i[1], target_i[2],
+				 predicted[pi,0], predicted[pi,1], predicted[pi,2],
+				 correct) )
+				
+	fo.close()
+
+##################################################
 # メイン
 ##################################################
 if __name__ == '__main__':
@@ -118,9 +185,7 @@ if __name__ == '__main__':
 	model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 	model.summary()
 	
-	fo = open('rnn_result_190812_01_whole.csv', 'a')
-	fo.write('epoch,loss acc\n')
-	fo.close()
+	output_whole_result_header()
 	
 	# 学習実行
 	for i in range(NUMBER_OF_TRAINING):
@@ -130,7 +195,7 @@ if __name__ == '__main__':
 		# 結果出力
 		loss, acc = model.evaluate(test_input, test_target, verbose=0)
 		print('%07d : loss=%f, acc=%f' % ((i+1)*NUMBER_OF_EPOCHS, loss, acc))
-		fo = open('rnn_result_190812_01_whole.csv', 'a')
+		fo = open(RESULT_FILE_WHOLE, 'a')
 		fo.write('%07d,%f,%f\n' % ((i+1)*NUMBER_OF_EPOCHS, loss, acc))
 		fo.close()
 		
@@ -138,36 +203,6 @@ if __name__ == '__main__':
 		predicted = model.predict(test_input)
 		
 		# 正解と予想結果をファイル出力
-		filename = str.format('./rnn_result_190812_01_%02d.csv' % (i) )
-		fo = open(filename, 'w')
-		fo.write('気温,湿度,気圧,晴れ,曇り,雨,晴れ(予測),曇り(予測),雨(予測))\n')
+		output_result(test_input_raw, test_target_raw, predicted, i)
 		
-		# 全テストデータの正解と予想結果出力
-		test_data_len = test_input.shape[0]
-		for i in range(test_data_len):
-			
-			# 入力と出力を取得
-			input = test_input_raw[i]
-			target = test_target[i]
-			
-			if i < (LENGTH_OF_SEQUENCES+LENGTH_OF_SHIFT):
-				# 予想結果が出せないデータの場合(最初の方)
-				fo.write('%f,%f,%f,%.2f,%.2f,%.2f\n' %
-					(input[0], input[1], input[2],
-					target[0], target[1], target[2] ) )
-			else:
-				pi = i - LENGTH_OF_SEQUENCES - LENGTH_OF_SHIFT
-				
-				# 正解/不正解を確認する
-				correct_i = numpy.argmax(target)
-				predict_i = numpy.argmax(predicted[pi])
-				correct = 1 if (correct_i == predict_i) else 0
-				
-				fo.write('%f,%f,%f%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n' % 
-					(input[0], input[1], input[2],
-					 target[0], target[1], target[2],
-					 predicted[pi,0], predicted[pi,1], predicted[pi,2],
-					 correct) )
-				
-		fo.close()
 
