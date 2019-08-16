@@ -26,17 +26,17 @@ NUMBER_OF_INPUT_NODES_FOR_REGRESS = 1 	# 入力データ数:(水戸)x(気温)
 NUMBER_OF_HIDDEN_NODES_FOR_REGRESS = 32 # 隠れ層のノード数
 NUMBER_OF_OUTPUT_NODES_FOR_REGRESS = 1	# 出力データ数:(水戸)x(気温)
 DROPOUT_RATE_FOR_REGRESS = 0.1		# ドロップアウト率
-LEARNING_RATE_FOR_REGRESS = 0.002	# 学習率
+LEARNING_RATE_FOR_REGRESS = 0.01	# 学習率
 SIZE_OF_BATCH_FOR_REGRESS = 24		# バッチサイズ
-RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190816_lstm_regress_01'
+RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190816_lstm_regress_06'
 
 ##############################
 # 共通のパラメータ
 ##############################
 NUMBER_OF_EPOCHS = 10		# 10回の学習のエポック数
-NUMBER_OF_TRAINING = 1000	# 学習回数
-OUTPUT_CYCLE = 1		# 学習経過出力周期
-RESULT_FILE_WHOLE = './result/result_190816_lstm_regress_01.csv'
+NUMBER_OF_TRAINING = 10000	# 学習回数
+OUTPUT_CYCLE = 10		# 学習経過出力周期
+RESULT_FILE_WHOLE = './result/result_190816_lstm_regress_06.csv'
 
 ##################################################
 # 学習用データ取得(回帰用)
@@ -86,14 +86,16 @@ def make_dataset_for_regress(input, target):
 	target_num = target.shape[1]
 	
 	data_len = data_num - LENGTH_OF_SEQUENCE_FOR_REGRESS - LENGTH_OF_SHIFT_FOR_REGRESS
-	re_input  = numpy.zeros( (data_len-1, LENGTH_OF_SEQUENCE_FOR_REGRESS, input_num) )
-	re_target = numpy.zeros( (data_len-1, target_num) )
+	re_input  = numpy.zeros( (data_len/LENGTH_OF_SEQUENCE_FOR_REGRESS, LENGTH_OF_SEQUENCE_FOR_REGRESS, input_num) )
+	re_target = numpy.zeros( (data_len/LENGTH_OF_SEQUENCE_FOR_REGRESS, target_num) )
 	
-	for i in range(data_len-1):
+	i = 0
+	for j in range(0, data_len, LENGTH_OF_SEQUENCE_FOR_REGRESS):
 		
-		re_input[i,0:LENGTH_OF_SEQUENCE_FOR_REGRESS,] = input[i:i+LENGTH_OF_SEQUENCE_FOR_REGRESS,]
-		re_target[i,] = target[i+LENGTH_OF_SEQUENCE_FOR_REGRESS+LENGTH_OF_SHIFT_FOR_REGRESS,]
+		re_input[i,0:LENGTH_OF_SEQUENCE_FOR_REGRESS,] = input[j:j+LENGTH_OF_SEQUENCE_FOR_REGRESS,]
+		re_target[i,] = target[j+LENGTH_OF_SEQUENCE_FOR_REGRESS+LENGTH_OF_SHIFT_FOR_REGRESS,]
 		#print(re_input[i,0:LENGTH_OF_SEQUENCE_FOR_REGRESS])
+		i += 1
 		
 	return re_input, re_target
 	
@@ -141,18 +143,9 @@ def get_data_for_regress():
 	train_input, train_target = make_dataset_for_regress(train_input_scaled, train_target_scaled)
 	test_input, test_target = make_dataset_for_regress(test_input_scaled, test_target_scaled)
 	
-	return train_input, train_target, test_input, test_target, scaler_input, scaler_target
-	
-	#train_input, train_target = make_dataset_for_regress(train_input_raw, train_target_raw)
-	#test_input, test_target = make_dataset_for_regress(test_input_raw, test_target_raw)
-	#
-	#scaler_input, train_input_scaled, test_input_scaled = \
-	#	 max_min_scale(train_input, test_input)
-	#scaler_target, train_target_scaled, test_target_scaled = \
-	#	 max_min_scale(train_target, test_target)
-	#
-	#return train_input_scaled, train_target_scaled, test_input_scaled, test_target_scaled, \
-	#	scaler_input, scaler_target
+	return train_input_raw, train_target_raw, test_input_raw, test_target_raw, \
+		train_input, train_target, test_input, test_target, \
+		scaler_input, scaler_target
 	
 ##################################################
 # 学習用のモデルを作成する(回帰用)
@@ -215,21 +208,16 @@ def output_result_for_regress(input, target, predicted, number):
 	sequence_len = LENGTH_OF_SEQUENCE_FOR_REGRESS+LENGTH_OF_SHIFT_FOR_REGRESS
 	for i in range(data_len):
 		
-		# 入力と出力を取得
-		input_i = input[i]
-		
-		if i < sequence_len :
-			# 予想結果が出せないデータの場合(最初の方)
-			fo.write('%.1f\n' %
-				(input_i[0]
-				 ) )
-		else:
-			pi = i - sequence_len
-			
+		if (i>=sequence_len) and (i % sequence_len == LENGTH_OF_SHIFT_FOR_REGRESS) :
+			j = i / sequence_len - 1
 			fo.write('%.1f,%.1f\n' %
-				(input_i[0],  
-				 predicted[pi,0],  
+				(input[i,0],  
+				 predicted[j,0],  
 				) )
+		else:
+			fo.write('%.1f\n' %
+				(input[i,0]
+				 ) )
 				
 	fo.close()
 	
@@ -239,6 +227,8 @@ def output_result_for_regress(input, target, predicted, number):
 if __name__ == '__main__':
 	
 	# 回帰用のデータ取得
+	train_input_raw_for_regress, train_target_raw_for_regress, \
+	test_input_raw_for_regress, test_target_raw_for_regress, \
 	train_input_for_regress, train_target_for_regress, \
 	test_input_for_regress, test_target_for_regress, \
 	scaler_input_for_regress, scaler_target_for_regress = get_data_for_regress()
@@ -256,7 +246,7 @@ if __name__ == '__main__':
 		model_for_regress.fit(
 				train_input_for_regress, train_target_for_regress, 
 				batch_size=SIZE_OF_BATCH_FOR_REGRESS, 
-				epochs=NUMBER_OF_EPOCHS, shuffle=True, verbose=1)
+				epochs=NUMBER_OF_EPOCHS, verbose=1)
 		
 		# 結果出力
 		loss_regress = model_for_regress.evaluate(test_input_for_regress, test_target_for_regress, verbose=0)
@@ -270,9 +260,8 @@ if __name__ == '__main__':
 			
 			# 回帰の結果出力
 			predicted_r = model_for_regress.predict(test_input_for_regress)
-			input_r_inversed = scaler_input_for_regress.inverse_transform(test_input_for_regress[:,0,:])
 			target_r_inversed = scaler_target_for_regress.inverse_transform(test_target_for_regress)
 			predicted_r_inversed = scaler_target_for_regress.inverse_transform(predicted_r)
-			output_result_for_regress(input_r_inversed, target_r_inversed, predicted_r_inversed, i)
+			output_result_for_regress(test_input_raw_for_regress, target_r_inversed, predicted_r_inversed, i)
 			
 
