@@ -20,15 +20,15 @@ from keras import optimizers
 ##############################
 # 回帰用のパラメータ
 ##############################
-LENGTH_OF_SEQUENCE_FOR_REGRESS = 24	# 過去48時間のデータから予測する
+LENGTH_OF_SEQUENCE_FOR_REGRESS = 24	# 過去24時間のデータから予測する
 LENGTH_OF_SHIFT_FOR_REGRESS = 0		# 0時間後のデータを予測する
-NUMBER_OF_INPUT_NODES_FOR_REGRESS = 2 	# 入力データ数:(水戸)x(気温,降水量,湿度,気圧)
-NUMBER_OF_HIDDEN_NODES_FOR_REGRESS = 32# 隠れ層のノード数
-NUMBER_OF_OUTPUT_NODES_FOR_REGRESS = 2	# 出力データ数:(水戸)x(気温,降水量,湿度,気圧)
+NUMBER_OF_INPUT_NODES_FOR_REGRESS = 2 	# 入力データ数:(水戸)x(気温,降水量)
+NUMBER_OF_HIDDEN_NODES_FOR_REGRESS = 32 # 隠れ層のノード数
+NUMBER_OF_OUTPUT_NODES_FOR_REGRESS = 2	# 出力データ数:(水戸)x(気温,降水量)
 DROPOUT_RATE_FOR_REGRESS = 0.1		# ドロップアウト率
-LEARNING_RATE_FOR_REGRESS = 0.01	# 学習率
+LEARNING_RATE_FOR_REGRESS = 0.002	# 学習率
 SIZE_OF_BATCH_FOR_REGRESS = 24		# バッチサイズ
-RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190815_lstm_regress_02'
+RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190816_lstm_regress_02'
 
 ##############################
 # 共通のパラメータ
@@ -36,7 +36,7 @@ RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190815_lstm_regress_02'
 NUMBER_OF_EPOCHS = 10		# 10回の学習のエポック数
 NUMBER_OF_TRAINING = 1000	# 学習回数
 OUTPUT_CYCLE = 1		# 学習経過出力周期
-RESULT_FILE_WHOLE = './result/result_190815_lstm_regress_02.csv'
+RESULT_FILE_WHOLE = './result/result_190816_lstm_regress_02.csv'
 
 ##################################################
 # 学習用データ取得(回帰用)

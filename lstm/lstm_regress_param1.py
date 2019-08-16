@@ -20,15 +20,15 @@ from keras import optimizers
 ##############################
 # 回帰用のパラメータ
 ##############################
-LENGTH_OF_SEQUENCE_FOR_REGRESS = 6	# 過去48時間のデータから予測する
+LENGTH_OF_SEQUENCE_FOR_REGRESS = 24	# 過去24時間のデータから予測する
 LENGTH_OF_SHIFT_FOR_REGRESS = 0		# 0時間後のデータを予測する
-NUMBER_OF_INPUT_NODES_FOR_REGRESS = 4 	# 入力データ数:(水戸)x(気温,降水量,湿度,気圧)
-NUMBER_OF_HIDDEN_NODES_FOR_REGRESS = 64# 隠れ層のノード数
-NUMBER_OF_OUTPUT_NODES_FOR_REGRESS = 4	# 出力データ数:(水戸)x(気温,降水量,湿度,気圧)
+NUMBER_OF_INPUT_NODES_FOR_REGRESS = 1 	# 入力データ数:(水戸)x(気温,降水量)
+NUMBER_OF_HIDDEN_NODES_FOR_REGRESS = 32 # 隠れ層のノード数
+NUMBER_OF_OUTPUT_NODES_FOR_REGRESS = 1	# 出力データ数:(水戸)x(気温,降水量)
 DROPOUT_RATE_FOR_REGRESS = 0.1		# ドロップアウト率
-LEARNING_RATE_FOR_REGRESS = 0.01	# 学習率
+LEARNING_RATE_FOR_REGRESS = 0.002	# 学習率
 SIZE_OF_BATCH_FOR_REGRESS = 24		# バッチサイズ
-RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190815_lstm_regress_01'
+RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190816_lstm_regress_01'
 
 ##############################
 # 共通のパラメータ
@@ -36,7 +36,7 @@ RESULT_FILE_NAME_FOR_REGRESS  = './result/result_190815_lstm_regress_01'
 NUMBER_OF_EPOCHS = 10		# 10回の学習のエポック数
 NUMBER_OF_TRAINING = 1000	# 学習回数
 OUTPUT_CYCLE = 1		# 学習経過出力周期
-RESULT_FILE_WHOLE = './result/result_190815_lstm_regress_01.csv'
+RESULT_FILE_WHOLE = './result/result_190816_lstm_regress_01.csv'
 
 ##################################################
 # 学習用データ取得(回帰用)
@@ -55,19 +55,21 @@ def load_data_for_regress(dir_path, point_name):
 		csv_data = read_weather_csv(csv_path)
 		temp = get_temperature(csv_data, point_name)
 		temperature = numpy.append(temperature, temp)
-		rain = get_rainfall(csv_data, point_name)
-		rainfall = numpy.append(rainfall, rain)
-		humi = get_humidity(csv_data, point_name)
-		humidity = numpy.append(humidity, humi)
-		pres = get_sea_level_pressure(csv_data, point_name)
-		pressure = numpy.append(pressure, pres)
+		#rain = get_rainfall(csv_data, point_name)
+		#rainfall = numpy.append(rainfall, rain)
+		#humi = get_humidity(csv_data, point_name)
+		#humidity = numpy.append(humidity, humi)
+		#pres = get_sea_level_pressure(csv_data, point_name)
+		#pressure = numpy.append(pressure, pres)
 		#weat_v = get_variable_weather(csv_data, point_name)
 		#weather_value = numpy.append(weather_value, weat_v)
 		#weat_l = get_weather(csv_data, point_name)
 		#weather_label = numpy.append(weather_label, weat_l)
 		
-	re_input = numpy.stack([temperature, rainfall, humidity, pressure], 1)
-	re_target = numpy.stack([temperature, rainfall, humidity, pressure], 1)
+	re_input = numpy.stack([temperature], 1)
+	re_target = numpy.stack([temperature], 1)
+	#re_input = numpy.stack([temperature, rainfall, humidity, pressure], 1)
+	#re_target = numpy.stack([temperature, rainfall, humidity, pressure], 1)
 	
 	re_input_interpolated  = interpolate_nan_input_data(re_input)
 	re_target_interpolated = interpolate_nan_label_data(re_target)
@@ -110,7 +112,7 @@ def get_data_for_regress():
 	#			[train_input_raw1, train_input_raw3, train_input_raw4] )
 	#train_target_raw = numpy.hstack(
 	#			[train_target_raw1, train_target_raw3, train_target_raw4] )
-	train_input_raw = train_input_raw1.reshape(train_input_raw1.shape[0], 4)
+	train_input_raw = train_input_raw1.reshape(train_input_raw1.shape[0], NUMBER_OF_INPUT_NODES_FOR_REGRESS)
 	train_target_raw = train_target_raw1
 	
 	# テスト用データ取得
@@ -123,7 +125,7 @@ def get_data_for_regress():
 	#			[test_input_raw1, test_input_raw3, test_input_raw4] )
 	#test_target_raw = numpy.hstack(
 	#			[test_target_raw1, test_target_raw3, test_target_raw4] )
-	test_input_raw = test_input_raw1.reshape(test_input_raw1.shape[0], 4)
+	test_input_raw = test_input_raw1.reshape(test_input_raw1.shape[0], NUMBER_OF_INPUT_NODES_FOR_REGRESS)
 	test_target_raw = test_target_raw1
 	
 	train_input, train_target = make_dataset_for_regress(train_input_raw, train_target_raw)
@@ -159,8 +161,11 @@ def make_model_for_regress():
 	
 	# モデル作成
 	model = Sequential()
+	#model.add( LSTM(NUMBER_OF_HIDDEN_NODES_FOR_REGRESS, 
+	#		input_shape=(LENGTH_OF_SEQUENCE_FOR_REGRESS, NUMBER_OF_INPUT_NODES_FOR_REGRESS), 
+	#		dropout=DROPOUT_RATE_FOR_REGRESS, recurrent_dropout=DROPOUT_RATE_FOR_REGRESS,
+	#		return_sequences=True) )
 	model.add( LSTM(NUMBER_OF_HIDDEN_NODES_FOR_REGRESS, 
-			#input_shape=(NUMBER_OF_INPUT_NODES_FOR_REGRESS, LENGTH_OF_SEQUENCE_FOR_REGRESS), 
 			input_shape=(LENGTH_OF_SEQUENCE_FOR_REGRESS, NUMBER_OF_INPUT_NODES_FOR_REGRESS), 
 			dropout=DROPOUT_RATE_FOR_REGRESS, recurrent_dropout=DROPOUT_RATE_FOR_REGRESS,
 			return_sequences=False) )
@@ -203,8 +208,8 @@ def output_result_for_regress(input, target, predicted, number):
 	# 正解と予想結果をファイル出力
 	filename = str.format('%s_%03d.csv' % (RESULT_FILE_NAME_FOR_REGRESS, number) )
 	fo = open(filename, 'w')
-	fo.write('水戸,,,,水戸(予測),,,,\n')
-	fo.write('気温,降水量,湿度,気圧,気温,降水量,湿度,気圧\n')
+	fo.write('水戸,,水戸(予測),,,,\n')
+	fo.write('気温,湿度,気温,湿度\n')
 	
 	# 全テストデータの正解と予想結果出力
 	data_len = input.shape[0]
@@ -216,15 +221,15 @@ def output_result_for_regress(input, target, predicted, number):
 		
 		if i < sequence_len :
 			# 予想結果が出せないデータの場合(最初の方)
-			fo.write('%.1f,%.1f,%.1f,%.1f\n' %
-				(input_i[0], input_i[1], input_i[2], input_i[3],
+			fo.write('%.1f\n' %
+				(input_i[0]
 				 ) )
 		else:
 			pi = i - sequence_len
 			
-			fo.write('%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f\n' %
-				(input_i[0], input_i[1], input_i[2], input_i[3],
-				 predicted[pi,0], predicted[pi,1], predicted[pi,2], predicted[pi,3],
+			fo.write('%.1f,%.1f\n' %
+				(input_i[0],  
+				 predicted[pi,0],  
 				) )
 				
 	fo.close()
