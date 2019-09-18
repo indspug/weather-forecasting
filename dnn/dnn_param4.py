@@ -16,11 +16,11 @@ from keras.layers import Dense, Activation, Dropout
 
 POINT_NAME = '水戸'
 MODEL_DIR  = 'ckpt'	# モデル保存先ディレクトリ
-MODEL_NAME = 'model_01'	# 保存するモデルのファイル名
+MODEL_NAME = 'model_04'	# 保存するモデルのファイル名
 NUM_EPOCH = 10		# 何回繰り返し学習させるか
 NUM_TRAING = 10000	# 学習回数(NUM_TRAING * NUM_EPOCH)
 SAVE_CYCLE = 100	# 保存周期(N回学習につき1回保存)
-RESULT_FILE = 'result_190917_simple_dnn_01.csv'	# 学習経過保存ファイル
+RESULT_FILE = 'result_190917_simple_dnn_04.csv'	# 学習経過保存ファイル
 OUTPUT_CYCLE = 1		# 学習経過出力周期(N回学習につき1回出力)
 RAINFALL_INDEX = 0
 
@@ -46,15 +46,15 @@ def extract_learning_data(dirpath):
 		# CSVファイル読み込み
 		csv_data = read_weather_csv(csv_path)
 	
-		# 入力データ取得：気温,降水量,相対湿度,海面気圧
-		temperature = get_temperature(csv_data, POINT_NAME)
-		rainfall = get_rainfall(csv_data, POINT_NAME)
+		# 入力データ取得：湿度,気圧
+		#rainfall = get_rainfall(csv_data, POINT_NAME)
+		#daylight = get_daylight(csv_data, POINT_NAME)
+		#cloud_cover = get_cloud_cover(csv_data,POINT_NAME)
+		#temperature = get_temperature(csv_data, POINT_NAME)
 		humidity = get_humidity(csv_data, POINT_NAME)
 		sea_level_pressure = get_sea_level_pressure(csv_data, POINT_NAME)
-		#cloud_cover = get_cloud_cover(csv_data,POINT_NAME)
 		#wind_speed = get_wind_speed(csv_data, POINT_NAME)
 		#wind_dir = get_wind_direction(csv_data, POINT_NAME)
-		#daylight = get_daylight(csv_data, POINT_NAME)
 		#atom_pressure = get_atom_pressure(csv_data, POINT_NAME)
 		
 		# 時(hh)取得
@@ -65,7 +65,7 @@ def extract_learning_data(dirpath):
 	
 		# 入力データ結合
 		input_data = numpy.stack(
-			[temperature, rainfall, humidity, sea_level_pressure], 1)
+			[humidity, sea_level_pressure], 1)
 		
 		# 出力データ取得：天気
 		label_data = get_weather(csv_data, POINT_NAME)
@@ -108,7 +108,7 @@ def extract_learning_data(dirpath):
 def make_model(input_data_dim, label_num):
 	
 	# モデルの作成
-	#  4 x 32 x 32 x 3 
+	#  3 x 32 x 32 x 3 
 	model = Sequential()
 	model.add(Dense(32, input_dim=input_data_dim))
 	model.add(Activation('relu'))
@@ -122,7 +122,7 @@ def make_model(input_data_dim, label_num):
 	
 	#optimizer = optimizers.SGD(lr=0.01)
 	#optimizer = optimizers.Adam(lr=0.001)
-	optimizer = optimizers.RMSprop(lr=0.002)
+	optimizer = optimizers.RMSprop(lr=0.005)
 	
 	model.compile(
 		optimizer=optimizer,
@@ -140,9 +140,9 @@ def output_result_header():
 	
 	fo = open(RESULT_FILE, 'a')
 	fo.write('##################################################\n')
-	fo.write('入力データ = 気温 降水量 相対湿度 海面気圧\n')
-	fo.write('model = 4 x 32 x 32 x 3\n')
-	fo.write('optimizer = RMSprop(lr=0.002)\n')
+	fo.write('入力データ = 湿度 気圧\n')
+	fo.write('model = 2 x 32 x 32 x 3\n')
+	fo.write('optimizer = RMSprop(lr=0.005)\n')
 	fo.write('date: ' + get_datetime_string() + '\n')
 	fo.write('##################################################\n')
 	fo.write('epoch, loss, acc, elapsed_time, acc_sunny, acc_cloudy, acc_rainy\n')
