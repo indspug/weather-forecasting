@@ -25,7 +25,7 @@ NUMBER_OF_HIDDEN_NODES1 = 64	# 隠れ層のノード数1
 NUMBER_OF_HIDDEN_NODES2 = 64	# 隠れ層のノード数2
 NUMBER_OF_OUTPUT_NODES = 3	# 出力データ数(晴れ,曇り,雨)
 DROPOUT_RATE = 0.5		# ドロップアウト率
-LEARNING_RATE = 0.0001  	# 学習率
+LEARNING_RATE = 0.000001  	# 学習率
 SIZE_OF_BATCH = 128		# バッチサイズ
 RESULT_FILE_NAME  = './result2/result_190917_dnn2_03'
 
@@ -149,7 +149,7 @@ def make_model():
 	model.add(Dense(NUMBER_OF_OUTPUT_NODES))
 	model.add(Activation('softmax'))
 
-	optimizer = optimizers.Adam(lr=LEARNING_RATE)
+	optimizer = optimizers.RMSprop(lr=LEARNING_RATE)
 	
 	model.compile(
 		optimizer=optimizer,
@@ -172,7 +172,7 @@ def output_whole_result_header():
 		   NUMBER_OF_HIDDEN_NODES2, NUMBER_OF_HIDDEN_NODES2, 
 		   NUMBER_OF_OUTPUT_NODES) )
 	fo.write('dropout rate = %f\n' % (DROPOUT_RATE) )
-	fo.write('optimizer = Adam(lr=%f)\n' % (LEARNING_RATE) )
+	fo.write('optimizer = RMSprop(lr=%f)\n' % (LEARNING_RATE) )
 	fo.write('date: ' + get_datetime_string() + '\n')
 	fo.write('##################################################\n')
 	fo.write('epoch,loss acc\n')

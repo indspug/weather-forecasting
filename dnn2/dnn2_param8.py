@@ -20,14 +20,14 @@ from keras import optimizers
 ##############################
 # 分類用のパラメータ
 ##############################
-NUMBER_OF_INPUT_NODES = 16	# 入力データ数:(水戸,前橋,東京,静岡,大阪,秩父,河口湖,新潟,宇都宮)x(気温,降水量,湿度,気圧)
-NUMBER_OF_HIDDEN_NODES1 = 64   # 隠れ層のノード数1
-NUMBER_OF_HIDDEN_NODES2 = 64	# 隠れ層のノード数2
+NUMBER_OF_INPUT_NODES = 4	# 入力データ数:(水戸,前橋,東京,静岡,大阪,秩父,河口湖,新潟,宇都宮)x(気温,降水量,湿度,気圧)
+NUMBER_OF_HIDDEN_NODES1 = 32   # 隠れ層のノード数1
+NUMBER_OF_HIDDEN_NODES2 = 32	# 隠れ層のノード数2
 NUMBER_OF_OUTPUT_NODES = 3	# 出力データ数(晴れ,曇り,雨)
 DROPOUT_RATE = 0.5		# ドロップアウト率
-LEARNING_RATE = 0.00002    	# 学習率
+LEARNING_RATE = 0.001    	# 学習率
 SIZE_OF_BATCH = 128		# バッチサイズ
-RESULT_FILE_NAME  = './result3/result_190917_dnn2_04'
+RESULT_FILE_NAME  = './result7/result_190917_dnn2_08'
 
 ##############################
 # 共通のパラメータ
@@ -35,11 +35,11 @@ RESULT_FILE_NAME  = './result3/result_190917_dnn2_04'
 NUMBER_OF_EPOCHS = 100		# 1回の学習のエポック数
 NUMBER_OF_TRAINING = 10000	# 学習回数
 OUTPUT_CYCLE = 10		# 学習経過出力周期
-RESULT_FILE_WHOLE = './result3/result_190917_dnn2_04.csv'
+RESULT_FILE_WHOLE = './result7/result_190917_dnn2_08.csv'
 SAVE_CYCLE = 1000		# 保存周期(N回学習につき1回保存)
 MODEL_DIR  = 'ckpt'		# モデル保存先ディレクトリ
-MODEL_NAME = 'model_190917_dnn2_04'	# 保存するモデルのファイル名
-NUMBER_OF_POINTS = 4		# 入力データの地点数
+MODEL_NAME = 'model_190917_dnn2_08'	# 保存するモデルのファイル名
+NUMBER_OF_POINTS = 5		# 入力データの地点数
 
 ##################################################
 # 学習用データ取得(分類用)
@@ -88,17 +88,17 @@ def get_data():
 	
 	# 学習用データ取得
 	train_input_raw1, train_target_raw1 = load_data('./train/mito',        '水戸')
-	train_input_raw2, train_target_raw2 = load_data('./train/maebashi',    '前橋')
-	train_input_raw3, train_target_raw3 = load_data('./train/tokyo',       '東京')
-	train_input_raw4, train_target_raw4 = load_data('./train/shizuoka',    '静岡')
+	#train_input_raw2, train_target_raw2 = load_data('./train/maebashi',    '前橋')
+	#train_input_raw3, train_target_raw3 = load_data('./train/tokyo',       '東京')
+	#train_input_raw4, train_target_raw4 = load_data('./train/shizuoka',    '静岡')
 	#train_input_raw5, train_target_raw5 = load_data('./train/osaka',       '大阪')
 	#train_input_raw6, train_target_raw6 = load_data('./train/chichibu',    '秩父')
 	#train_input_raw7, train_target_raw7 = load_data('./train/kawaguchiko', '河口湖')
 	#train_input_raw8, train_target_raw8 = load_data('./train/nigata',      '新潟')
 	#train_input_raw9, train_target_raw9 = load_data('./train/utsunomiya',  '宇都宮')
 	train_input_raw = numpy.hstack( [
-		 			train_input_raw1, train_input_raw2, train_input_raw3,
-		 			train_input_raw4, #train_input_raw5,
+		 			train_input_raw1, #train_input_raw2, train_input_raw3,
+		 			#train_input_raw4, train_input_raw5,
 		 			#train_input_raw6, train_input_raw7, train_input_raw8, train_input_raw9,
 				] )
 	#train_input_raw = train_input_raw1.reshape(train_input_raw1.shape[0], NUMBER_OF_INPUT_NODES)
@@ -106,17 +106,17 @@ def get_data():
 	
 	# テスト用データ取得
 	test_input_raw1, test_target_raw1 = load_data('./test/mito',        '水戸')
-	test_input_raw2, test_target_raw2 = load_data('./test/maebashi',    '前橋')
-	test_input_raw3, test_target_raw3 = load_data('./test/tokyo',       '東京')
-	test_input_raw4, test_target_raw4 = load_data('./test/shizuoka',    '静岡')
+	#test_input_raw2, test_target_raw2 = load_data('./test/maebashi',    '前橋')
+	#test_input_raw3, test_target_raw3 = load_data('./test/tokyo',       '東京')
+	#test_input_raw4, test_target_raw4 = load_data('./test/shizuoka',    '静岡')
 	#test_input_raw5, test_target_raw5 = load_data('./test/osaka',       '大阪')
 	#test_input_raw6, test_target_raw6 = load_data('./test/chichibu',    '秩父')
 	#test_input_raw7, test_target_raw7 = load_data('./test/kawaguchiko', '河口湖')
 	#test_input_raw8, test_target_raw8 = load_data('./test/nigata',      '新潟')
 	#test_input_raw9, test_target_raw9 = load_data('./test/utsunomiya',  '宇都宮')
 	test_input_raw = numpy.hstack( [
-					test_input_raw1, test_input_raw2, test_input_raw3,
-					test_input_raw4, #test_input_raw5,
+					test_input_raw1, #test_input_raw2, test_input_raw3,
+					#test_input_raw4, test_input_raw5,
 		 			#test_input_raw6, test_input_raw7, test_input_raw8, test_input_raw9,
 				] )
 	#test_input_raw = test_input_raw1.reshape(test_input_raw1.shape[0], NUMBER_OF_INPUT_NODES)
@@ -166,7 +166,7 @@ def output_whole_result_header():
 	
 	fo = open(RESULT_FILE_WHOLE, 'a')
 	fo.write('##################################################\n')
-	fo.write('入力データ = (水戸,前橋,東京,静岡)x(気温,降水量,湿度,気圧)\n')
+	fo.write('入力データ = (水戸,前橋,東京,静岡,大阪)x(気温,降水量,湿度,気圧)\n')
 	fo.write('model_for_class = %d x %d x DropOut(%d) x %d x DropOut(%d) x %d \n'
 		% (NUMBER_OF_INPUT_NODES, NUMBER_OF_HIDDEN_NODES1, NUMBER_OF_HIDDEN_NODES1,
 		   NUMBER_OF_HIDDEN_NODES2, NUMBER_OF_HIDDEN_NODES2, 
@@ -225,7 +225,7 @@ def output_result(input, target, predicted, number):
 	fo = open(filename, 'w')
 	
 	# ヘッダー１行目設定
-	fo.write('水戸,,,,前橋,,,,東京,,,,静岡,,,,')
+	fo.write('水戸,,,,')
 	#fo.write('水戸,,,,前橋,,,,東京,,,,静岡,,,,大阪,,,,秩父,,,,河口湖,,,,新潟,,,,宇都宮,,,,')
 	fo.write('水戸(正解),,,,水戸(予測),,,,正解率,\n')
 	fo.write('\n')

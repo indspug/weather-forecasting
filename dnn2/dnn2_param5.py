@@ -21,11 +21,11 @@ from keras import optimizers
 # 分類用のパラメータ
 ##############################
 NUMBER_OF_INPUT_NODES = 8	# 入力データ数:(水戸,前橋,東京,静岡,大阪,秩父,河口湖,新潟,宇都宮)x(気温,降水量,湿度,気圧)
-NUMBER_OF_HIDDEN_NODES1 = 32	# 隠れ層のノード数1
-NUMBER_OF_HIDDEN_NODES2 = 32	# 隠れ層のノード数2
+NUMBER_OF_HIDDEN_NODES1 = 64	# 隠れ層のノード数1
+NUMBER_OF_HIDDEN_NODES2 = 64	# 隠れ層のノード数2
 NUMBER_OF_OUTPUT_NODES = 3	# 出力データ数(晴れ,曇り,雨)
-DROPOUT_RATE = 0.2		# ドロップアウト率
-LEARNING_RATE = 0.001    	# 学習率
+DROPOUT_RATE = 0.5		# ドロップアウト率
+LEARNING_RATE = 0.0001    	# 学習率
 SIZE_OF_BATCH = 128		# バッチサイズ
 RESULT_FILE_NAME  = './result4/result_190917_dnn2_05'
 
@@ -167,7 +167,7 @@ def make_model():
 	model.add(Dense(NUMBER_OF_OUTPUT_NODES))
 	model.add(Activation('softmax'))
 
-	optimizer = optimizers.Adam(lr=LEARNING_RATE)
+	optimizer = optimizers.RMSprop(lr=LEARNING_RATE)
 	
 	model.compile(
 		optimizer=optimizer,
@@ -190,7 +190,7 @@ def output_whole_result_header():
 		   NUMBER_OF_HIDDEN_NODES2, NUMBER_OF_HIDDEN_NODES2, 
 		   NUMBER_OF_OUTPUT_NODES) )
 	fo.write('dropout rate = %f\n' % (DROPOUT_RATE) )
-	fo.write('optimizer = Adam(lr=%f)\n' % (LEARNING_RATE) )
+	fo.write('optimizer = RMSprop(lr=%f)\n' % (LEARNING_RATE) )
 	fo.write('date: ' + get_datetime_string() + '\n')
 	fo.write('##################################################\n')
 	fo.write('epoch,loss acc\n')
